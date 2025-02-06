@@ -1,0 +1,13 @@
+Raspberry Pi 2 model B
+
+IMPORTANT!! Sudo shutdown -h now
+Need to shut off the RP, directly unplugging the power cord might corrupt the pi.
+
+Useful Commands:
+python3 file.py: For running python files
+
+Sudo raspi-config: Opens the configuration settings menu
+
+free -h: For checking info on RAM
+
+
