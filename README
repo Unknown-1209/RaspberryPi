@@ -10,4 +10,8 @@ Sudo raspi-config: Opens the configuration settings menu
 
 free -h: For checking info on RAM
 
+sudo apt-get -y install python3-rpi.gpio: For resolving an issue when using PWM. GPIO conflicts with LGPIO 
 
+time g++ file.cc: time command outputs the runtime of a file
+
+sudo apt-get install fail2ban: Limits the amount of password attempts and greatly improves security
