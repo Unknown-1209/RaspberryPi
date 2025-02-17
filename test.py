@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
 
-import time
-import smbus2 as smbus
+import LCD1602
 import RPi.GPIO as GPIO
+import time
 
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1" 
 import pygame
-
-
-
-
-# I2C Address for 1602 LCD
-LCD_ADDR = 0x27
-BUS = smbus.SMBus(1)
 
 # Rotary Encoder GPIO Pins
 CLK = 17  # A
@@ -95,52 +88,6 @@ clk_last_state = GPIO.input(CLK)
 last_turn_time = time.time()  # Tracks last movement time
 debounce_interval = 0.5  # Increase to make encoder less sensitive
 
-def write_word(data):
-    """Write a byte to the I2C LCD with backlight control."""
-    try:
-        BUS.write_byte(LCD_ADDR, data | 0x08)  # Backlight ON
-    except Exception as e:
-        print(f"[ERROR] LCD Write Failed: {e}")
-
-def send_command(command):
-    """Send a command to the LCD."""
-    write_word(command & 0xF0)
-    write_word((command & 0xF0) | 0x04)
-    write_word(command & 0xF0)
-    write_word((command << 4) & 0xF0)
-    write_word(((command << 4) & 0xF0) | 0x04)
-    write_word((command << 4) & 0xF0)
-    time.sleep(0.002)
-
-def send_data(data):
-    """Send a character to the LCD."""
-    write_word((data & 0xF0) | 0x01)
-    write_word(((data & 0xF0) | 0x05))
-    write_word((data & 0xF0) | 0x01)
-    write_word(((data << 4) & 0xF0) | 0x01)
-    write_word((((data << 4) & 0xF0) | 0x05))
-    write_word(((data << 4) & 0xF0) | 0x01)
-    time.sleep(0.002)
-
-def init_lcd():
-    """Initialize LCD in 4-bit mode."""
-    time.sleep(0.05)
-    send_command(0x33)
-    send_command(0x32)
-    send_command(0x28)
-    send_command(0x0C)
-    send_command(0x01)
-    time.sleep(0.1)
-
-def write_lcd(line1, line2):
-    """Write text to the LCD, clearing previous text."""
-    send_command(0x80)  # Move to first line
-    for i in range(16):
-        send_data(ord(line1[i]) if i < len(line1) else ord(' '))
-    send_command(0xC0)  # Move to second line
-    for i in range(16):
-        send_data(ord(line2[i]) if i < len(line2) else ord(' '))
-
 def update_display():
     """Update LCD with the current menu selection."""
     global current_menu, menu_index_top, menu_index_bottom
@@ -157,7 +104,7 @@ def update_display():
 
     line1 = current_menu[menu_index_top]
     line2 = current_menu[menu_index_bottom] if len(current_menu) > 1 else ""
-    write_lcd(line1, line2)
+    LCD1602.write_lcd(line1, line2)
     print(f"[DISPLAY] {line1} / {line2}")
 
 def check_prompts():
@@ -168,9 +115,6 @@ def check_prompts():
         # Get the selected prompt key
         selected_prompt = current_menu[menu_index_top]
         print(f"[DEBUG] Selected prompt: {selected_prompt}")
-
-        # Play voice line for the selected prompt
-        play_voice_line(selected_prompt)
 
         # Navigate deeper into the prompt tree
         if selected_prompt in prompt_tree:
@@ -188,7 +132,10 @@ def check_prompts():
             # Update display and reset selection
             menu_index_top = 0
             menu_index_bottom = 1 if len(current_menu) > 1 else 0
-            update_display()
+            update_display()  # Update the display immediately
+
+            # Play voice line for the selected prompt (will wait for audio to finish)
+            play_voice_line(selected_prompt)
 
         else:
             print("[DEBUG] No new responses available.")
@@ -197,9 +144,6 @@ def check_prompts():
         # Handle navigation within nested prompts
         selected_prompt = current_menu[menu_index_top]
         print(f"[DEBUG] Selected nested prompt: {selected_prompt}")
-
-        # Play voice line for the selected prompt
-        play_voice_line(selected_prompt)
 
         # Find the current nested dictionary
         current_dict = prompt_tree
@@ -246,7 +190,11 @@ def check_prompts():
                     prompt_history = []
                     print("[NAVIGATION] No further prompts, returning to Main Menu...")
 
-            update_display()
+            # Update display and reset selection
+            update_display()  # Update the display immediately
+
+            # Play voice line for the selected prompt (will wait for audio to finish)
+            play_voice_line(selected_prompt)
 
         else:
             print("[DEBUG] No new responses available.")
@@ -254,11 +202,11 @@ def check_prompts():
     else:
         print("[DEBUG] Not inside the Prompts submenu.")
 
-
 def play_voice_line(prompt):
-    """Play a voice line using pygame."""
+    """Play a voice line using pygame and wait for it to finish."""
+    current_directory = os.getcwd()
     voice_lines = {
-        "Hello there": "/home/Hufflepuff/Music/B1_hold_it.mp3",
+        "Hello there": os.path.join(current_directory,"AUDIO_FILES/B1_hold_it.mp3"),
         "What happened?": "audio/what_happened.wav",
         "Never mind.": "audio/never_mind.wav",
         # Add more prompts and corresponding audio files here
@@ -266,16 +214,18 @@ def play_voice_line(prompt):
 
     if prompt in voice_lines:
         try:
+            # Initialize pygame mixer
             pygame.mixer.init()
+            # Load and play the audio file
             pygame.mixer.music.load(voice_lines[prompt])
             pygame.mixer.music.play()
-            while pygame.mixer.music.get_busy():  # Wait for the audio to finish playing
+            # Wait for the audio to finish playing
+            while pygame.mixer.music.get_busy():
                 continue
         except Exception as e:
             print(f"[ERROR] Failed to play voice line: {e}")
     else:
         print(f"[DEBUG] No voice line for prompt: {prompt}")
-
 
 def check_unlocks():
     """Checks and unlocks any Easter eggs based on conditions."""
@@ -382,10 +332,8 @@ def check_button():
         time.sleep(0.3)  # Basic debounce
 
 
-
-
 # Initialize LCD
-init_lcd()
+LCD1602.init_lcd()
 update_display()
 
 try:
@@ -393,8 +341,9 @@ try:
         read_rotary()
         check_button()
         time.sleep(0.01)  # Small delay to reduce CPU usage
+
 except KeyboardInterrupt:
     GPIO.cleanup()
-    send_command(0x01)  # Clear LCD
+    LCD1602.send_command(0x01)  # Clear LCDa
     print("[EXIT] Cleanup and Shutdown...")
 

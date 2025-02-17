@@ -158,6 +158,7 @@ try:
         time.sleep(0.01)  # Small delay to reduce CPU usage
 except KeyboardInterrupt:
     GPIO.cleanup()
-    send_command(0x01)  # Clear LCD
+    send_command(0x02)  # Clear LCD
+    send_command(0x01)
     print("\n[EXIT] Cleanup and Shutdown...")
 

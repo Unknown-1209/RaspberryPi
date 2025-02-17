@@ -19,7 +19,19 @@ pygame.mixer.init()
 AUDIO_FILE = "/home/Hufflepuff/Music/B1_hold_it.mp3"
 pygame.mixer.music.load(AUDIO_FILE)
 
-try:
+droid_on = False
+
+def detect_motion():
+    global droid_on
+
+    if GPIO.input(PIR_PIN) and not droid_on:  # Motion detected
+        droid_on = False
+        print("{Sensor} Motion detected! Initiate Start up")
+    else:
+        print("INACTIVE")
+
+
+"""try:
     print("Waiting for motion...")
     while True:
         if GPIO.input(PIR_PIN):  # Motion detected
@@ -33,7 +45,13 @@ try:
 
             print("Motion stopped. LED stays ON.")
 
-        time.sleep(0.1)  # Small delay before checking again
+        time.sleep(0.1)"""  # Small delay before checking again
+
+
+try:
+    while True:
+        detect_motion()
+        time.sleep(0.5)
 
 except KeyboardInterrupt:
     print("\nExiting...")
