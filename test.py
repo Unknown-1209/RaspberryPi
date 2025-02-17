@@ -4,6 +4,13 @@ import time
 import smbus2 as smbus
 import RPi.GPIO as GPIO
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1" 
+import pygame
+
+
+
+
 # I2C Address for 1602 LCD
 LCD_ADDR = 0x27
 BUS = smbus.SMBus(1)
@@ -21,21 +28,18 @@ prompt_tree = {
                     "I have time.": {},
                     "Never mind.": {},
                     },
-                "Back": None
                 },
             "Get out of the sand!": {
                 "I'm stuck.": {
                     "Need help?": {},
                     "You're on your own.": {},
                     },
-                "Back": None
                 },
             "Stop slacking!": {
                 "I'm not slacking!": {
                     "Then get up.": {},
                     "Fine, I'll leave.": {},
                     },
-                "Back": None
                 }
             },
         "Are you okay?": {
@@ -44,30 +48,30 @@ prompt_tree = {
                 "Find a mechanic.": {},
                 },
             "I'm fine, thanks!": {},
-            "Back": None
             },
         "Can I help?": {
             "Yes, please!": {
                 "What do you need?": {},
                 },
             "Find a mechanic.": {},
-            "Back": None
             }
 }
 
 
 # Menu Structure
 menu_tree = {
-    "Start": None,
-    "Settings": ["Brightness", "Volume", "Back"],
-    "Info": ["Version: 1.1.5", "Credits", "Back"],
-    "Exit": None,
+    "Dev Team": ["JS-730", "KDQ-959", "L419", "SMB-177", "Back"],
+    "Info": ["Version: 1.13.3", "Back"],
+    "[REDACTED]": None,
+    "[LOREM]": ["SW 4: 1977","SW 5: 1980", "SW 6: 1999", "SW 3: 2002", "ERROR: SITH", "Back"],
     "Prompts": prompt_tree 
 
 }
 
+
 main_menu = list(menu_tree.keys())
 submenu = []
+prompt_history = [] 
 order_66_unlocked = False
 roger_roger_unlocked = False
 rat_unlocked = False
@@ -138,20 +142,35 @@ def write_lcd(line1, line2):
         send_data(ord(line2[i]) if i < len(line2) else ord(' '))
 
 def update_display():
-    """Update LCD with the current menu selection."""        
-    
+    """Update LCD with the current menu selection."""
+    global current_menu, menu_index_top, menu_index_bottom
+
+    # Ensure menu_index_top and menu_index_bottom are within bounds
+    if not current_menu:
+        # If current_menu is empty, reset to main menu
+        current_menu = main_menu
+        menu_index_top = 0
+        menu_index_bottom = 1 if len(current_menu) > 1 else 0
+
+    menu_index_top = menu_index_top % len(current_menu)  # Wrap around if out of bounds
+    menu_index_bottom = (menu_index_top + 1) % len(current_menu)  # Wrap around if out of bounds
+
     line1 = current_menu[menu_index_top]
-    line2 = current_menu[menu_index_bottom] if menu_index_bottom < len(current_menu) else ""
+    line2 = current_menu[menu_index_bottom] if len(current_menu) > 1 else ""
     write_lcd(line1, line2)
     print(f"[DISPLAY] {line1} / {line2}")
 
 def check_prompts():
     """Navigate the nested prompt tree based on user selection."""
-    global current_menu, menu_tree, prompt_history, menu_index_top, menu_index_bottom
+    global current_menu, menu_tree, prompt_history, menu_index_top, menu_index_bottom, in_submenu
 
-    if in_submenu and current_menu == menu_tree["Prompts"]:
+    if in_submenu and current_menu == list(prompt_tree.keys()):
+        # Get the selected prompt key
         selected_prompt = current_menu[menu_index_top]
         print(f"[DEBUG] Selected prompt: {selected_prompt}")
+
+        # Play voice line for the selected prompt
+        play_voice_line(selected_prompt)
 
         # Navigate deeper into the prompt tree
         if selected_prompt in prompt_tree:
@@ -163,7 +182,7 @@ def check_prompts():
                 in_submenu = False
                 prompt_history = []  # Clear history
             else:
-                prompt_history.append(current_menu)  # Save history
+                prompt_history.append(selected_prompt)  # Save the selected key (string) to history
                 current_menu = list(new_prompts.keys())  # Move deeper into prompts
 
             # Update display and reset selection
@@ -174,8 +193,88 @@ def check_prompts():
         else:
             print("[DEBUG] No new responses available.")
 
+    elif in_submenu and current_menu != list(prompt_tree.keys()):
+        # Handle navigation within nested prompts
+        selected_prompt = current_menu[menu_index_top]
+        print(f"[DEBUG] Selected nested prompt: {selected_prompt}")
+
+        # Play voice line for the selected prompt
+        play_voice_line(selected_prompt)
+
+        # Find the current nested dictionary
+        current_dict = prompt_tree
+        for key in prompt_history:  # Traverse the history to get to the current level
+            current_dict = current_dict[key]
+
+        if selected_prompt in current_dict:
+            new_prompts = current_dict[selected_prompt]
+
+            if new_prompts is None:  # Handle "Back" button
+                if prompt_history:
+                    # Go back to the previous menu
+                    prompt_history.pop()  # Remove the last key from history
+                    if prompt_history:
+                        # Rebuild current_menu based on the updated history
+                        current_dict = prompt_tree
+                        for key in prompt_history:
+                            current_dict = current_dict[key]
+                        current_menu = list(current_dict.keys())
+                    else:
+                        # Return to the main menu
+                        current_menu = main_menu
+                        in_submenu = False
+                    menu_index_top = 0
+                    menu_index_bottom = 1 if len(current_menu) > 1 else 0
+                    print("[NAVIGATION] Going back to previous menu...")
+                else:
+                    # Return to the main menu
+                    current_menu = main_menu
+                    in_submenu = False
+                    print("[NAVIGATION] Returning to Main Menu...")
+            else:
+                # Move deeper into the nested prompts
+                if new_prompts:  # Check if there are further prompts
+                    prompt_history.append(selected_prompt)  # Save the selected key (string) to history
+                    current_menu = list(new_prompts.keys())
+                    menu_index_top = 0
+                    menu_index_bottom = 1 if len(current_menu) > 1 else 0
+                    print(f"[NAVIGATION] Entering deeper into prompt tree: {selected_prompt}")
+                else:
+                    # No further prompts, return to main menu
+                    current_menu = main_menu
+                    in_submenu = False
+                    prompt_history = []
+                    print("[NAVIGATION] No further prompts, returning to Main Menu...")
+
+            update_display()
+
+        else:
+            print("[DEBUG] No new responses available.")
+
     else:
         print("[DEBUG] Not inside the Prompts submenu.")
+
+
+def play_voice_line(prompt):
+    """Play a voice line using pygame."""
+    voice_lines = {
+        "Hello there": "/home/Hufflepuff/Music/B1_hold_it.mp3",
+        "What happened?": "audio/what_happened.wav",
+        "Never mind.": "audio/never_mind.wav",
+        # Add more prompts and corresponding audio files here
+    }
+
+    if prompt in voice_lines:
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load(voice_lines[prompt])
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy():  # Wait for the audio to finish playing
+                continue
+        except Exception as e:
+            print(f"[ERROR] Failed to play voice line: {e}")
+    else:
+        print(f"[DEBUG] No voice line for prompt: {prompt}")
 
 
 def check_unlocks():
@@ -224,9 +323,10 @@ def read_rotary():
         update_display()
     clk_last_state = clk_state
 
+
 def check_button():
     """Check if the encoder button is pressed."""
-    global current_menu, submenu, menu_index_top, menu_index_bottom, in_submenu, button_clicks
+    global current_menu, submenu, menu_index_top, menu_index_bottom, in_submenu, button_clicks, prompt_history
 
     if GPIO.input(SW) == GPIO.LOW:
         selected_item = current_menu[menu_index_top]
@@ -234,18 +334,41 @@ def check_button():
         
         if in_submenu:
             if selected_item == "Back":
-                current_menu = main_menu
-                in_submenu = False
-                menu_index_top = 0
-                menu_index_bottom = 1 if len(main_menu) > 1 else 0
-                print(f"[NAVIGATION] Returning to Main Menu | Button Count: {button_clicks}")
+                if prompt_history:
+                    # Go back to the previous menu
+                    prompt_history.pop()  # Remove the last key from history
+                    if prompt_history:
+                        # Rebuild current_menu based on the updated history
+                        current_dict = prompt_tree
+                        for key in prompt_history:
+                            current_dict = current_dict[key]
+                        current_menu = list(current_dict.keys())
+                    else:
+                        # Return to the main menu
+                        current_menu = main_menu
+                        in_submenu = False
+                    menu_index_top = 0
+                    menu_index_bottom = 1 if len(current_menu) > 1 else 0
+                    print(f"[NAVIGATION] Going back to previous menu | Button Count: {button_clicks}")
+                else:
+                    # Return to the main menu
+                    current_menu = main_menu
+                    in_submenu = False
+                    menu_index_top = 0
+                    menu_index_bottom = 1 if len(main_menu) > 1 else 0
+                    print(f"[NAVIGATION] Returning to Main Menu | Button Count: {button_clicks}")
             else:
-                if current_menu == menu_tree["Prompts"]:
-                    check_prompt()
-
-                print(f"[ACTION] Selected {selected_item} in submenu | Button Count: {button_clicks}")
+                # Handle navigation within the prompt tree
+                check_prompts()
         else:
-            if menu_tree.get(selected_item):  # Check if it has a submenu
+            if selected_item == "Prompts":
+                # Enter the Prompts submenu
+                current_menu = list(prompt_tree.keys())  # Set current_menu to the list of prompt keys
+                in_submenu = True
+                menu_index_top = 0
+                menu_index_bottom = 1 if len(current_menu) > 1 else 0
+                print(f"[NAVIGATION] Entering {selected_item} submenu | Button Count: {button_clicks}")
+            elif menu_tree.get(selected_item):  # Check if it has a submenu
                 submenu = menu_tree[selected_item]
                 current_menu = submenu
                 in_submenu = True
@@ -254,10 +377,12 @@ def check_button():
                 print(f"[NAVIGATION] Entering {selected_item} submenu | Button Count: {button_clicks}")
             else:
                 print(f"[ACTION] Selected {selected_item} | Button Count: {button_clicks}")
-
-
+        
         update_display()
         time.sleep(0.3)  # Basic debounce
+
+
+
 
 # Initialize LCD
 init_lcd()

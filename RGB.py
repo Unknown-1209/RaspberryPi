@@ -5,7 +5,7 @@ LED_R_PIN = 13
 LED_G_PIN = 12
 LED_B_PIN = 18
 GPIO.setmode(GPIO.BCM)
-GPIO.setup([LED_R_PIN, LED_G_PIN, LED_B_PIN],GPIO.OUT)
+GPIO.setup([LED_R_PIN, LED_G_PIN, LED_B_PIN],GPIO.OUT, initial=GPIO.LOW)
 RED = GPIO.PWM(LED_R_PIN, 1000)
 GREEN = GPIO.PWM(LED_G_PIN, 1000)
 BLUE = GPIO.PWM(LED_B_PIN, 1000)
@@ -36,8 +36,9 @@ try:
         # color code #34A853 (R = 52,  G = 168, B = 83)
         setColor(52, 168, 83);
         sleep(1)
-finally:
+except KeyboardInterrupt:
     RED.stop()
     GREEN.stop()
     BLUE.stop()
     GPIO.cleanup()
+    print("\nProgram exiting...")
