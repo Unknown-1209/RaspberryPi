@@ -70,6 +70,8 @@ prompt_history = []
 order_66_unlocked = False
 roger_roger_unlocked = False
 rat_unlocked = False
+sith_path_unlock = False
+jedi_path_unlock = False
 
 # Menu State Tracking
 current_menu = main_menu
@@ -141,6 +143,24 @@ def toggle_led_color(led):
     color_states[led] = (color_states[led] + 1) % len(COLORS)
     set_led_color(led, *COLORS[color_states[led]])
 
+def check_led_states():
+    """Check if the states of the LEDs."""
+    global sith_path_unlock, jedi_path_unlock
+
+    if (COLORS[color_states["LED1"]] == (1, 0, 0) and  # Blue is (0, 0, 1)
+        COLORS[color_states["LED2"]] == (1, 0, 0) and  # Green is (0, 1, 0)
+        COLORS[color_states["LED3"]] == (1, 0, 0)):    # Purple is (1, 0, 1)
+        sith_path_unlock = True
+
+    
+    if (COLORS[color_states["LED1"]] == (0, 0, 1) and  # Blue is (0, 0, 1)
+        COLORS[color_states["LED2"]] == (0, 1, 0) and  # Green is (0, 1, 0)
+        COLORS[color_states["LED3"]] == (1, 0, 1)):    # Purple is (1, 0, 1)
+        jedi_path_unlock = True
+
+
+    check_unlocks()
+
 
 # Main loop
 def check_sensor():
@@ -152,6 +172,7 @@ def check_sensor():
             if current_state == GPIO.LOW:  # Sensor is pressed (LOW)
                 led = f"LED{sensor[-1]}"  # Match sensor to LED (e.g., SENSOR1 -> LED1)
                 toggle_led_color(led)
+    check_led_states()
 
 
 """-------------------------MENU LOGIC-------------------------"""
@@ -298,7 +319,7 @@ def play_voice_line(prompt):
 
 def check_unlocks():
     """Checks and unlocks any Easter eggs based on conditions."""
-    global order_66_unlocked, main_menu, menu_tree, rat_unlocked
+    global order_66_unlocked, main_menu, menu_tree, rat_unlocked, sith_append
 
     # Unlock "Order 66" if the rotary encoder turns 66 times
     if rotary_turns == 10 and not order_66_unlocked:
@@ -312,6 +333,18 @@ def check_unlocks():
         main_menu.append("Rat")
         menu_tree["Rat"] = ["A wild Rat", "Has appeared", "Back"]
         print("[SECRET] Rat Unlocked!")
+
+    if sith_path_unlock and "Sith Path" not in main_menu:
+        main_menu.append("Sith Path")
+        menu_tree["Sith Path"] = ["Serve the Empire", "Back"]
+        print("[SECRET] Sith path Unlocked!")
+
+    if jedi_path_unlock and "Jedi Path" not in main_menu:
+        main_menu.append("Jedi Path")
+        menu_tree["Jedi Path"] = ["May the Force","Be with you", "Back"]
+        print("[SECRET] Jedi path Unlocked!")
+
+
 
 def read_rotary():
     """Reads rotary encoder input with reduced sensitivity."""
