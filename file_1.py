@@ -16,28 +16,6 @@ CLK = 17  # A
 DT = 18   # B
 SW = 27   # Button
 
-# LED GPIO Pins (Avoiding conflicts with rotary encoder pins)
-LED_PINS = {
-    "LED1": {"red": 10, "green": 9, "blue": 11},  # GPIO pins for LED1
-    "LED2": {"red": 5, "green": 6, "blue": 13},    # GPIO pins for LED2
-    "LED3": {"red": 23, "green": 24, "blue": 25},  # GPIO pins for LED3
-}
-
-# GPIO Pin Setup for Touch Sensors
-TOUCH_SENSORS = {
-    "SENSOR1": 19,  # GPIO pin for Sensor 1 (paired with LED1)
-    "SENSOR2": 20,  # GPIO pin for Sensor 2 (paired with LED2)
-    "SENSOR3": 21,  # GPIO pin for Sensor 3 (paired with LED3)
-}
-
-# Initialize LED GPIO pins
-for led, pins in LED_PINS.items():
-    for color, pin in pins.items():
-        GPIO.setup(pin, GPIO.OUT, initial=GPIO.LOW)
-
-# Initialize touch sensor GPIO pins
-for sensor, pin in TOUCH_SENSORS.items():
-    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Prompt Tree
 prompt_tree = {
@@ -115,13 +93,36 @@ debounce_interval = 0.5  # Increase to make encoder less sensitive
 
 """-------------------------LED LOGIC-------------------------"""
 
+# GPIO Pin Setup for RGB LEDs
+LED_PINS = {
+    "LED1": {"red": 10, "green": 9, "blue": 11},  # GPIO pins for LED1
+    "LED2": {"red": 5, "green": 6, "blue": 13},    # GPIO pins for LED2
+    "LED3": {"red": 23, "green": 24, "blue": 25},  # GPIO pins for LED3
+}
+
+# GPIO Pin Setup for Touch Sensors
+TOUCH_SENSORS = {
+    "SENSOR1": 16,  # GPIO pin for Sensor 1 (paired with LED1)
+    "SENSOR2": 20,  # GPIO pin for Sensor 2 (paired with LED2)
+    "SENSOR3": 21,  # GPIO pin for Sensor 3 (paired with LED3)
+}
+
 # Colors to cycle through
 COLORS = [
+    (1, 0, 0),  # Red
     (0, 1, 0),  # Green
     (0, 0, 1),  # Blue
-    (1, 0, 0),  # Red
     (1, 0, 1),  # Purple
 ]
+
+# Setup LED pins as outputs
+for led, pins in LED_PINS.items():
+    for color, pin in pins.items():
+        GPIO.setup(pin, GPIO.OUT, initial = GPIO.LOW)  # Turn off all LEDs initially
+
+# Setup touch sensor pins as inputs with pull-up resistors
+for sensor, pin in TOUCH_SENSORS.items():
+    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Function to set LED color
 def set_led_color(led, red, green, blue):
@@ -132,35 +133,25 @@ def set_led_color(led, red, green, blue):
 # Dictionary to track the current color state for each LED
 color_states = {"LED1": -1, "LED2": -1, "LED3": -1}  # Start with all LEDs off
 
+# Dictionary to track the previous state of each sensor
+sensor_states = {sensor: GPIO.LOW for sensor in TOUCH_SENSORS}
+
 # Function to toggle color for a specific LED
 def toggle_led_color(led):
-    global color_states
-
     color_states[led] = (color_states[led] + 1) % len(COLORS)
     set_led_color(led, *COLORS[color_states[led]])
 
-def check_touch_sensors():
-    """Check touch sensors and update LED states."""
-    global TOUCH_SENSORS
-
+# Main loop
+def test():
+    # Check each sensor and update its corresponding LED
     for sensor, pin in TOUCH_SENSORS.items():
-        state = GPIO.input(pin)
-        if state == GPIO.LOW:  # Sensor is pressed
-            led = f"LED{sensor[-1]}"  # Match sensor to LED (e.g., SENSOR1 -> LED1)
-            print(f"[DEBUG] {sensor} pressed, toggling {led}")
-            toggle_led_color(led)
-            time.sleep(0.5)  # Debounce delay:
+        current_state = GPIO.input(pin)
+        if current_state != sensor_states[sensor]:  # Sensor state has changed
+            sensor_states[sensor] = current_state  # Update the sensor state
+            if current_state == GPIO.LOW:  # Sensor is pressed (LOW)
+                led = f"LED{sensor[-1]}"  # Match sensor to LED (e.g., SENSOR1 -> LED1)
+                toggle_led_color(led)
 
-def get_led_states():
-    """Get the current state of the LEDs."""
-    led_states = {}
-    for led, pins in LED_PINS.items():
-        led_states[led] = {
-            "red": GPIO.input(pins["red"]),
-            "green": GPIO.input(pins["green"]),
-            "blue": GPIO.input(pins["blue"]),
-        }
-    return led_states
 
 """-------------------------MENU LOGIC-------------------------"""
 
@@ -413,7 +404,7 @@ try:
     while True:
         read_rotary()
         check_button()
-        check_touch_sensors()  # Check touch sensors and update LEDs
+        test()  # Check touch sensors and update LEDs
         # check_led_states()  # Check LED states for unlocks
         time.sleep(0.01)  # Small delay to reduce CPU usage
 
