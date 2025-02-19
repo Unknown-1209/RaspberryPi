@@ -141,8 +141,9 @@ def toggle_led_color(led):
     color_states[led] = (color_states[led] + 1) % len(COLORS)
     set_led_color(led, *COLORS[color_states[led]])
 
+
 # Main loop
-def test():
+def check_sensor():
     # Check each sensor and update its corresponding LED
     for sensor, pin in TOUCH_SENSORS.items():
         current_state = GPIO.input(pin)
@@ -404,8 +405,7 @@ try:
     while True:
         read_rotary()
         check_button()
-        test()  # Check touch sensors and update LEDs
-        # check_led_states()  # Check LED states for unlocks
+        check_sensor()  # Check touch sensors and update LEDs
         time.sleep(0.01)  # Small delay to reduce CPU usage
 
 except KeyboardInterrupt:
