@@ -3,9 +3,9 @@ import time
 
 # GPIO Pin Setup for RGB LEDs
 LED_PINS = {
-    "LED1": {"red": 17, "green": 27, "blue": 22},  # GPIO pins for LED1
-    "LED2": {"red": 23, "green": 24, "blue": 25},  # GPIO pins for LED2
-    "LED3": {"red": 5, "green": 6, "blue": 13},    # GPIO pins for LED3
+    "LED1": {"red": 10, "green": 9, "blue": 11},  # GPIO pins for LED1
+    "LED2": {"red": 5, "green": 6, "blue": 13},    # GPIO pins for LED2
+    "LED3": {"red": 23, "green": 24, "blue": 25},  # GPIO pins for LED3
 }
 
 # GPIO Pin Setup for Touch Sensors
@@ -53,16 +53,19 @@ def toggle_led_color(led):
     set_led_color(led, *COLORS[color_states[led]])
 
 # Main loop
+def test():
+    # Check each sensor and update its corresponding LED
+    for sensor, pin in TOUCH_SENSORS.items():
+        current_state = GPIO.input(pin)
+        if current_state != sensor_states[sensor]:  # Sensor state has changed
+            sensor_states[sensor] = current_state  # Update the sensor state
+            if current_state == GPIO.LOW:  # Sensor is pressed (LOW)
+                led = f"LED{sensor[-1]}"  # Match sensor to LED (e.g., SENSOR1 -> LED1)
+                toggle_led_color(led)
+
 try:
     while True:
-        # Check each sensor and update its corresponding LED
-        for sensor, pin in TOUCH_SENSORS.items():
-            current_state = GPIO.input(pin)
-            if current_state != sensor_states[sensor]:  # Sensor state has changed
-                sensor_states[sensor] = current_state  # Update the sensor state
-                if current_state == GPIO.LOW:  # Sensor is pressed (LOW)
-                    led = f"LED{sensor[-1]}"  # Match sensor to LED (e.g., SENSOR1 -> LED1)
-                    toggle_led_color(led)
+        test()
 
         # Small delay to avoid excessive CPU usage
         time.sleep(0.1)
