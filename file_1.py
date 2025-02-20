@@ -394,7 +394,7 @@ def check_unlocks():
         menu_tree["Lightsabers"] = ["0xFF00FF", "0x00FF00", "0xFF0000", "0x0000FF","0xFFFF00" ,"Back" ]
         print("[SECRET] Lightsabers unlocked!")
 
-    if rotary_turns == 66 and not order_66_unlocked:
+    if rotary_turns == 66 and not order_66_unlock:
         order_66_unlock = True
         main_menu.append("Order 66")
         menu_tree["Order 66"] = ["Eliminate all", "The Jedi", "Back"]
