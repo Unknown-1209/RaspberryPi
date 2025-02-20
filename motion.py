@@ -7,10 +7,10 @@ import pygame
 pygame.mixer.init()
 
 # GPIO setup
-PIR_PIN = 7   # Motion sensor input pin
+PIR_PIN = 4   # Motion sensor input pin
 LED_PIN = 40  # Debugging LED output pin
 
-GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
+GPIO.setmode(GPIO.BCM)  # Use physical pin numbering
 GPIO.setup(PIR_PIN, GPIO.IN)  # Set PIR sensor as input
 GPIO.setup(LED_PIN, GPIO.OUT)  # Set LED as output
 

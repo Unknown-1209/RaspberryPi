@@ -19,38 +19,56 @@ SW = 27   # Button
 
 # Prompt Tree
 prompt_tree = {
-    "Hello there": {
+    "What are you?": {
+        "Buried in sand.": {
+            "Got left behind.": {},
+            "Damaged badly.": {},
+            "No help now.": {},
+        },
+        "Old battle droid.": {
+            "War’s long gone.": {},
+            "Scrap metal now.": {},
+            "Useless now.": {},
+        },
         "What happened?": {
-            "It's a long story.": {
-                "I have time.": {},
-                "Never mind.": {},
-            },
-        },
-        "Get out of the sand!": {
-            "I'm stuck.": {
-                "Need help?": {},
-                "You're on your own.": {},
-            },
-        },
-        "Stop slacking!": {
-            "I'm not slacking!": {
-                "Then get up.": {},
-                "Fine, I'll leave.": {},
-            },
+            "Stuck here long.": {},
+            "Shut down now.": {},
+            "Inactive now.": {},
         },
     },
-    "Are you okay?": {
-        "I need repairs.": {
-            "I’ll fix you.": {},
-            "Find a mechanic.": {},
+    "What’s your name?": {
+        "No name here.": {
+            "Just a droid.": {},
+            "Not programmed.": {},
+            "You call me that.": {},
         },
-        "I'm fine, thanks!": {},
+        "Unit number?": {
+            "Can't recall now.": {},
+            "It's lost here.": {},
+            "I forgot it.": {},
+        },
+        "Still functional?": {
+            "Barely working.": {},
+            "Memory errors.": {},
+            "Power down now.": {},
+        },
     },
-    "Can I help?": {
-        "Yes, please!": {
-            "What do you need?": {},
+    "What can you do?": {
+        "Fight?": {
+            "Mission failed.": {},
+            "Not anymore.": {},
+            "Wasn’t enough.": {},
         },
-        "Find a mechanic.": {},
+        "Help me?": {
+            "No, sorry.": {},
+            "Need repairs.": {},
+            "Not your problem.": {},
+        },
+        "Call for help?": {
+            "No one coming.": {},
+            "I’m alone.": {},
+            "No comms here.": {},
+        },
     },
 }
 
@@ -134,7 +152,7 @@ def set_led_color(led, red, green, blue):
     GPIO.output(LED_PINS[led]["blue"], blue)
 
 # Dictionary to track the current color state for each LED
-color_states = {"LED1": -1, "LED2": -1, "LED3": -1}  # Start with all LEDs off
+color_states = {"LED1": 1, "LED2": 1, "LED3": 1}  # Start with all LEDs off but set to green
 
 # Dictionary to track the previous state of each sensor
 sensor_states = {sensor: GPIO.LOW for sensor in TOUCH_SENSORS}
@@ -297,11 +315,14 @@ def play_voice_line(prompt):
     """Play a voice line using pygame and wait for it to finish."""
     current_directory = os.getcwd()
     voice_lines = {
-        "Hello there": os.path.join(current_directory, "AUDIO_FILES/B1_hold_it.mp3"),
+        "What are you?": os.path.join(current_directory, "AUDIO_FILES/B1_hold_it.mp3"),
         "What happened?": "audio/what_happened.wav",
         "Never mind.": "audio/never_mind.wav",
         # Add more prompts and corresponding audio files here
         "Serve the Empire": os.path.join(current_directory, "AUDIO_FILES/B1_hold_it.mp3"),
+        "SW 4: 1977": os.path.join(current_directory, "AUDIO_FILES/B1_hold_it.mp3"),
+        "JS-730": os.path.join(current_directory, "AUDIO_FILES/B1_hold_it.mp3"),
+
     }
 
     if prompt in voice_lines:
@@ -342,12 +363,10 @@ def check_unlocks():
         print("[SECRET] Sith path Unlocked!")
 
     if jedi_path_unlock and "Jedi Path" not in main_menu:
-        menu_tree["Sith Path"] = {
-        "Serve the Empire": None,
-        "Join the Dark Side": "audio/join_dark_side.mp3",
-        "Back": None
-        }
-        print("[SECRET] Sith Path Unlocked!")
+        main_menu.append("Jedi Path")
+        menu_tree["Jedi Path"] = ["May the Force","Be with you", "Back"]
+        print("[SECRET] Jedi path Unlocked!")
+
 
 
 def read_rotary():
@@ -406,7 +425,7 @@ def check_button():
                     print(f"[NAVIGATION] Returning to Main Menu | Button Count: {button_clicks}")
             else:
                 # Play voice line if a submenu item matches
-                if selected_item in menu_tree.get("Jedi Path", {}) or selected_item in menu_tree.get("Sith Path", {}):
+                if selected_item in menu_tree.get("Jedi Path", {}) or selected_item in menu_tree.get("Sith Path", {}) or selected_item in menu_tree.get("[LOREM]", {}):
                     play_voice_line(selected_item)
                 else:
                     check_prompts()  # For other menu options
@@ -439,8 +458,11 @@ def check_button():
 
 
 # Initialize LCD
-LCD1602.init_lcd()
-update_display()
+
+def start_up():
+    LCD1602.init_lcd()
+    update_display()
+
 def menu():
     read_rotary()
     check_button()
