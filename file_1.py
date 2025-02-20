@@ -95,7 +95,7 @@ roger_roger_unlock = False
 rat_unlock = False
 sith_path_unlock = False
 jedi_path_unlock = False
-sarlacc_pit = False
+sarlacc_unlock = False
 
 
 # Menu State Tracking
@@ -276,7 +276,7 @@ def check_prompts():
 
             if new_prompts is None:  # Handle "Back" button
                 if prompt_history:
-                    # Go back to the previous menu
+                    # Go back to the p"Kylo Ren"revious menu
                     prompt_history.pop()  # Remove the last key from history
                     if prompt_history:
                         # Rebuild current_menu based on the updated history
@@ -413,12 +413,12 @@ def check_unlocks():
 
     if jedi_path_unlock and "Jedi Path" not in main_menu:
         main_menu.append("Jedi Path")
-        menu_tree["Jedi Path"] = ["Luke Skywalker", "Yoda", "Mace Windu" "Back"]
+        menu_tree["Jedi Path"] = ["Luke Skywalker", "Yoda", "Mace Windu", "Back"]
         print("[SECRET] Jedi path Unlocked!")
 
     if roger_roger_unlock and "Roger Roger" not in main_menu:
         main_menu.append("Roger Roger")
-        menu_tree["Roger Roger"] = ["More More!", "Yoda Death", "Roger Roger"]
+        menu_tree["Roger Roger"] = ["More More!", "Yoda Death", "Roger Roger", "Back"]
         print("[SECRET Roger Roger Unlocked!]")
 
 
@@ -427,13 +427,13 @@ def check_unlocks():
         menu_tree["Galactic Logs"].insert(4,"Rebels")
         print("[SECRET] Rebels unlocked!")
 
-    if order_66_unlock and light_sabers_unlock and rebels_unlock and jedi_path_unlock and sith_unlock and roger_roger_unlock \
-        and not sarlac_unlock:
+    if order_66_unlock and lightsabers_unlock and rebels_unlock and jedi_path_unlock and sith_path_unlock and roger_roger_unlock \
+        and not sarlacc_unlock:
 
-        sarlac_unlock = True
-        main_menu.append("Sarclac Pit")
+        sarlacc_unlock = True
+        main_menu.append("Sarclacc Pit")
         menu_tree["Sarclacc Pit"] = ["*Boba Fett" , "has fallen into", "the Pit*", "Back"]
-        print(["[SECRET] Sarlacc Pit Unlocked!"])
+        print("[SECRET] Sarlacc Pit Unlocked!")
 
 
 def read_rotary():
