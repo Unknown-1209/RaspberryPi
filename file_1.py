@@ -351,16 +351,12 @@ def play_voice_line(prompt):
         "Rebels": os.path.join(current_directory, "AUDIO_FILES/Kanan_Jarrus_death.mp3"),
 
 
-
         # Ligtsabers
         "0xFF0000": os.path.join(current_directory, "AUDIO_FILES/Darth_Vader_lightsaber.mp3"),
         "0x00FF00": os.path.join(current_directory, "AUDIO_FILES/lightsaber_ignition.mp3"),
 
-
-
         # Sith Path
         "Kylo Ren": os.path.join(current_directory, "AUDIO_FILES/Kylo_Ren.mp3"),
-
 
         # Jedi Path
         "Yoda": os.path.join(current_directory, "AUDIO_FILES/Yoda_do_or_do_not.mp3"),
@@ -412,12 +408,12 @@ def check_unlocks():
 
     if sith_path_unlock and "Sith Path" not in main_menu:
         main_menu.append("Sith Path")
-        menu_tree["Sith Path"] = ["Serve the Empire","", "Back"]
+        menu_tree["Sith Path"] = ["Darth Sidious","Darth Vader", "Darth Maul", "Kylo Ren", "Back"]
         print("[SECRET] Sith path Unlocked!")
 
     if jedi_path_unlock and "Jedi Path" not in main_menu:
         main_menu.append("Jedi Path")
-        menu_tree["Jedi Path"] = ["May the Force","Be with you", "Back"]
+        menu_tree["Jedi Path"] = ["Luke Skywalker", "Yoda", "Mace Windu" "Back"]
         print("[SECRET] Jedi path Unlocked!")
 
     if roger_roger_unlock and "Roger Roger" not in main_menu:
